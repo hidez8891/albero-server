@@ -2,11 +2,11 @@ package archive
 
 import (
 	"archive/zip"
-	"io"
 	"log"
 	"net/http"
 	"strconv"
 
+	"../image"
 	"../utility/array"
 )
 
@@ -67,9 +67,5 @@ func zipDataCallback(w http.ResponseWriter, path, page string) {
 	}
 	defer body.Close()
 
-	w.Header().Set("Content-Type", "image/jpeg")
-	w.Header().Set("Content-Length", strconv.FormatInt(size, 10))
-	if _, err := io.Copy(w, body); err != nil {
-		log.Printf("ERR: zipDataCallback: %v [%s][%s]\n", err, path, page)
-	}
+	image.ResponseWrite(w, page, body, size)
 }
