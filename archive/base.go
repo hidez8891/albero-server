@@ -33,7 +33,7 @@ func install(h *archConfig) *archConfig {
 }
 
 func SetHttpRoute() {
-	http.HandleFunc("/archive/", archHandler)
+	http.HandleFunc(root, archHandler)
 }
 
 func archHandler(w http.ResponseWriter, r *http.Request) {
