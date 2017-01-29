@@ -2,6 +2,7 @@ package archive
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
 
 	"../utility/array"
@@ -37,19 +38,35 @@ func install(h *archConfig) *archConfig {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	url := r.URL.Path[len(root):]
-	if url == "" {
+	path := r.URL.RawPath
+	if path == "" {
+		path = r.URL.Path
+	}
+	path = path[len(root):]
+	if path == "" {
 		http.NotFound(w, r)
 		return
 	}
 
-	archPath := url
+	archPath := path
 	archPage := ""
 
-	pagei := strings.LastIndex(url, "/")
+	pagei := strings.LastIndex(path, "/")
 	if pagei >= 0 {
-		archPath = url[:pagei]
-		archPage = url[pagei+1:]
+		archPath = path[:pagei]
+		archPage = path[pagei+1:]
+	}
+
+	var err error
+	archPath, err = url.QueryUnescape(archPath)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	archPage, err = url.QueryUnescape(archPage)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	exti := strings.LastIndex(archPath, ".")
