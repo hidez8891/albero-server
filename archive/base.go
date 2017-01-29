@@ -27,16 +27,16 @@ var (
 	confs []*archConfig
 )
 
+func SetHttpRoute() {
+	http.HandleFunc(root, handler)
+}
+
 func install(h *archConfig) *archConfig {
 	confs = append(confs, h)
 	return h
 }
 
-func SetHttpRoute() {
-	http.HandleFunc(root, archHandler)
-}
-
-func archHandler(w http.ResponseWriter, r *http.Request) {
+func handler(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Path[len(root):]
 	if url == "" {
 		http.NotFound(w, r)
