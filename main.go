@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"./archive"
+	"./image"
 )
 
 const defaultPort = "5358"
@@ -17,6 +18,7 @@ func main() {
 	// archive/info  -> archive infomation (json)
 	// archive/data  -> archive's image binary data
 	// archive/ext   -> support archive extension
+	image.SetHttpRoute()
 	archive.SetHttpRoute()
 
 	log.Println("Listening on " + defaultPort)
