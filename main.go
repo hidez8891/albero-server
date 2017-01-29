@@ -11,14 +11,10 @@ import (
 const defaultPort = "5358"
 
 func main() {
-	// support       -> support file/archive extension
-	// image/info    -> image infomation (json)
-	// image/data    -> image binary data
-	// image/ext     -> support image extension
-	// archive/info  -> archive infomation (json)
-	// archive/data  -> archive's image binary data
-	// archive/ext   -> support archive extension
+	// image/image_file_path
 	image.SetHttpRoute()
+
+	// archive/archive_file_path[/image_file_path]
 	archive.SetHttpRoute()
 
 	log.Println("Listening on " + defaultPort)
