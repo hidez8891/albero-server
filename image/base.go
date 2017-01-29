@@ -32,6 +32,14 @@ func SetHttpRoute() {
 	http.HandleFunc(root, handler)
 }
 
+func SupportType() []string {
+	exts := []string{}
+	for _, conf := range confs {
+		exts = append(exts, conf.exts...)
+	}
+	return exts
+}
+
 func ResponseWrite(w http.ResponseWriter, path string, r io.Reader, size int64) {
 	exti := strings.LastIndex(path, ".")
 	if exti < 0 {

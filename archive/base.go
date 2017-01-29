@@ -32,6 +32,14 @@ func SetHttpRoute() {
 	http.HandleFunc(root, handler)
 }
 
+func SupportType() []string {
+	exts := []string{}
+	for _, conf := range confs {
+		exts = append(exts, conf.exts...)
+	}
+	return exts
+}
+
 func install(h *archConfig) *archConfig {
 	confs = append(confs, h)
 	return h
