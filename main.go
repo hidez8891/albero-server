@@ -3,11 +3,10 @@ package main
 import (
 	"log"
 	"net/http"
-	"strconv"
 
 	"./archive"
 	"./image"
-	"./utility/array"
+	"./utility/json"
 )
 
 const defaultPort = "5358"
@@ -32,15 +31,10 @@ func main() {
 }
 
 func supportType(w http.ResponseWriter, r *http.Request) {
-	json := "{" +
-		"\"image\":" + array.ToJson(image.SupportType()) + "," +
-		"\"archive\":" + array.ToJson(archive.SupportType()) +
-		"}"
-	buff := []byte(json)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Content-Length", strconv.Itoa(len(buff)))
-	if _, err := w.Write(buff); err != nil {
-		log.Printf("ERR: supportType: %v\n", err)
+	data := map[string][]string{
+		"image":   image.SupportType(),
+		"archive": archive.SupportType(),
 	}
+
+	json.WriteResponse(w, data)
 }
