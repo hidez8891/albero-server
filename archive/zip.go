@@ -59,5 +59,5 @@ func zipDataCallback(w http.ResponseWriter, path, page string) {
 	}
 	defer body.Close()
 
-	image.ResponseWrite(w, page, body, size)
+	image.WriteResponse(w, page, body, size)
 }

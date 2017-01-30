@@ -40,7 +40,7 @@ func SupportType() []string {
 	return exts
 }
 
-func ResponseWrite(w http.ResponseWriter, path string, r io.Reader, size int64) {
+func WriteResponse(w http.ResponseWriter, path string, r io.Reader, size int64) {
 	exti := strings.LastIndex(path, ".")
 	if exti < 0 {
 		http.Error(w, "No Support Type", http.StatusUnsupportedMediaType)
