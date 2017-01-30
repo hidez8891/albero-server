@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -9,9 +11,14 @@ import (
 	"./utility/json"
 )
 
-const defaultPort = "5358"
+const defaultPort = 5358
 
 func main() {
+	var port uint
+	flag.UintVar(&port, "port", defaultPort, "listen port")
+	flag.UintVar(&port, "p", defaultPort, "listen port")
+	flag.Parse()
+
 	// image data
 	// image/image_file_path
 	image.SetHttpRoute()
@@ -23,8 +30,8 @@ func main() {
 	// support type
 	http.HandleFunc("/support", supportType)
 
-	log.Println("Listening on " + defaultPort)
-	err := http.ListenAndServe(":"+defaultPort, nil)
+	log.Printf("Listening on %d\n", port)
+	err := http.ListenAndServe(fmt.Sprintf("localhost:%d", defaultPort), nil)
 	if err != nil {
 		log.Fatal("Listen And Serve:", err)
 	}
