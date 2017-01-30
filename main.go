@@ -1,29 +1,47 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
 
 	"./archive"
 	"./image"
+	"./utility/json"
 )
 
-const defaultPort = "5358"
+const defaultPort = 5358
 
 func main() {
-	// support       -> support file/archive extension
-	// image/info    -> image infomation (json)
-	// image/data    -> image binary data
-	// image/ext     -> support image extension
-	// archive/info  -> archive infomation (json)
-	// archive/data  -> archive's image binary data
-	// archive/ext   -> support archive extension
+	var port uint
+	flag.UintVar(&port, "port", defaultPort, "listen port")
+	flag.UintVar(&port, "p", defaultPort, "listen port")
+	flag.Parse()
+
+	// image data
+	// image/image_file_path
 	image.SetHttpRoute()
+
+	// archive data
+	// archive/archive_file_path[/image_file_path]
 	archive.SetHttpRoute()
 
-	log.Println("Listening on " + defaultPort)
-	err := http.ListenAndServe(":"+defaultPort, nil)
+	// support type
+	http.HandleFunc("/support", supportType)
+
+	log.Printf("Listening on %d\n", port)
+	err := http.ListenAndServe(fmt.Sprintf("localhost:%d", defaultPort), nil)
 	if err != nil {
 		log.Fatal("Listen And Serve:", err)
 	}
+}
+
+func supportType(w http.ResponseWriter, r *http.Request) {
+	data := map[string][]string{
+		"image":   image.SupportType(),
+		"archive": archive.SupportType(),
+	}
+
+	json.WriteResponse(w, data)
 }

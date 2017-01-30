@@ -2,12 +2,11 @@ package archive
 
 import (
 	"archive/zip"
-	"log"
 	"net/http"
-	"strconv"
 
 	"../image"
 	"../utility/array"
+	"../utility/json"
 )
 
 var zipConf = install(&archConfig{
@@ -30,14 +29,7 @@ func zipInfoCallback(w http.ResponseWriter, path string) {
 		paths[i] = f.Name
 	}
 
-	json := array.ToJson(paths)
-	buff := []byte(json)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Content-Length", strconv.Itoa(len(buff)))
-	if _, err := w.Write(buff); err != nil {
-		log.Printf("ERR: zipInfoCallback: %v [%s]\n", err, path)
-	}
+	json.WriteResponse(w, paths)
 }
 
 func zipDataCallback(w http.ResponseWriter, path, page string) {
@@ -67,5 +59,5 @@ func zipDataCallback(w http.ResponseWriter, path, page string) {
 	}
 	defer body.Close()
 
-	image.ResponseWrite(w, page, body, size)
+	image.WriteResponse(w, page, body, size)
 }

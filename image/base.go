@@ -32,7 +32,15 @@ func SetHttpRoute() {
 	http.HandleFunc(root, handler)
 }
 
-func ResponseWrite(w http.ResponseWriter, path string, r io.Reader, size int64) {
+func SupportType() []string {
+	exts := []string{}
+	for _, conf := range confs {
+		exts = append(exts, conf.exts...)
+	}
+	return exts
+}
+
+func WriteResponse(w http.ResponseWriter, path string, r io.Reader, size int64) {
 	exti := strings.LastIndex(path, ".")
 	if exti < 0 {
 		http.Error(w, "No Support Type", http.StatusUnsupportedMediaType)
