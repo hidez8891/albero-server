@@ -19,15 +19,23 @@ func main() {
 	flag.UintVar(&port, "p", defaultPort, "listen port")
 	flag.Parse()
 
-	// image data
-	// image/image_file_path
-	image.SetHttpRoute()
+	// read directory :: json
+	// localhost/base64(root/dir_path)
 
-	// archive data
-	// archive/archive_file_path[/image_file_path]
-	archive.SetHttpRoute()
+	// read archive :: json
+	// localhost/base64(root/arch.ext)
 
-	// support type
+	// read archive inner directory :: json
+	// localhost/base64(root/arch.ext/dir_path)
+
+	// read image :: binary
+	// image/base64(root/image_file_path)
+
+	// read image into archive :: binary
+	// image/base64(root/arch.ext/image_file_path)
+	//image.SetHttpRoute()
+
+	// read support type :: json
 	http.HandleFunc("/support", supportType)
 
 	log.Printf("Listening on %d\n", port)
