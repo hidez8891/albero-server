@@ -20,20 +20,19 @@ func main() {
 	flag.Parse()
 
 	// read directory :: json
-	// localhost/base64(root/dir_path)
+	// localhost/fs/base64(root/dir_path)
 
 	// read archive :: json
-	// localhost/base64(root/arch.ext)
+	// localhost/fs/base64(root/arch.ext)
 
 	// read archive inner directory :: json
-	// localhost/base64(root/arch.ext/dir_path)
+	// localhost/fs/base64(root/arch.ext/dir_path)
 
 	// read image :: binary
-	// image/base64(root/image_file_path)
+	// localhost/img/base64(root/image_file_path)
 
 	// read image into archive :: binary
-	// image/base64(root/arch.ext/image_file_path)
-	//image.SetHttpRoute()
+	// localhost/img/base64(root/arch.ext/image_file_path)
 
 	// read support type :: json
 	http.HandleFunc("/support", supportType)
