@@ -27,6 +27,20 @@ func (o *archZipRoutingModule) Close() {
 	// Nothing to do
 }
 
+type zipFileReadCloser struct {
+	r *zip.ReadCloser
+	f io.ReadCloser
+}
+
+func (o *zipFileReadCloser) Read(p []byte) (n int, err error) {
+	return o.f.Read(p)
+}
+
+func (o *zipFileReadCloser) Close() error {
+	o.f.Close()
+	return o.r.Close()
+}
+
 func archZipRouting(r io.ReadCloser, vpath string, w http.ResponseWriter, size int64) RoutingModule {
 	http.Error(w, "Not Support", http.StatusUnsupportedMediaType)
 	r.Close()
@@ -40,7 +54,6 @@ func archZipRouting2(path, vpath string, w http.ResponseWriter) RoutingModule {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil
 	}
-	defer r.Close()
 
 	// get all file path
 	paths := make([]string, len(r.File))
@@ -57,15 +70,22 @@ func archZipRouting2(path, vpath string, w http.ResponseWriter) RoutingModule {
 
 			conf := dispatch(vpath, w)
 			if conf == nil {
+				r.Close()
 				return nil
 			}
 
 			file, err := f.Open()
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
+				r.Close()
 				return nil
 			}
-			return conf.routing(file, "", w, int64(f.UncompressedSize64))
+
+			zipfile := &zipFileReadCloser{
+				r: r,
+				f: file,
+			}
+			return conf.routing(zipfile, "", w, int64(f.UncompressedSize64))
 		}
 	}
 
