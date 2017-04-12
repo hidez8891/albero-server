@@ -1,14 +1,16 @@
 package module
 
 import (
+	"io"
 	"net/http"
 	"os"
 )
 
 type imgBasicRoutingModule struct {
 	mime string
-	path string
 	w    http.ResponseWriter
+	r    io.ReadCloser
+	size int64
 }
 
 func (o *imgBasicRoutingModule) ReturnFiles() {
@@ -16,37 +18,47 @@ func (o *imgBasicRoutingModule) ReturnFiles() {
 }
 
 func (o *imgBasicRoutingModule) ReturnBinary() {
-	// open binary file
-	file, err := os.Open(o.path)
-	if err != nil {
-		http.Error(o.w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer file.Close()
-
-	// file size
-	stat, err := file.Stat()
-	if err != nil {
-		http.Error(o.w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// return binary
-	returnBinary(o.w, file, o.mime, stat.Size())
+	returnBinary(o.w, o.r, o.mime, o.size)
 }
 
-func newImgBasicRoutingModule(mime string) func(string, string, http.ResponseWriter) RoutingModule {
-	return func(path, vpath string, w http.ResponseWriter) RoutingModule {
+func (o *imgBasicRoutingModule) Close() {
+	o.r.Close()
+}
+
+func newImgBasicRoutingModule(mime string) func(io.ReadCloser, string, http.ResponseWriter, int64) RoutingModule {
+	return func(r io.ReadCloser, vpath string, w http.ResponseWriter, size int64) RoutingModule {
 		if len(vpath) != 0 {
 			http.Error(w, "Not Found File", http.StatusUnsupportedMediaType)
+			r.Close()
 			return nil
 		}
 
 		return &imgBasicRoutingModule{
 			mime: mime,
-			path: path,
 			w:    w,
+			r:    r,
 		}
+	}
+}
+
+func newImgBasicRoutingModule2(mime string) func(string, string, http.ResponseWriter) RoutingModule {
+	return func(path, vpath string, w http.ResponseWriter) RoutingModule {
+		// open binary file
+		file, err := os.Open(path)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return nil
+		}
+
+		// file size
+		stat, err := file.Stat()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			file.Close()
+			return nil
+		}
+
+		return newImgBasicRoutingModule(mime)(file, vpath, w, stat.Size())
 	}
 }
 
@@ -55,25 +67,29 @@ func newImgBasicRoutingModule(mime string) func(string, string, http.ResponseWri
 //
 
 var bmpConf = install(&moduleConfig{
-	name:    "bmp",
-	exts:    []string{"bmp"},
-	routing: newImgBasicRoutingModule("image/bmp"),
+	name:     "bmp",
+	exts:     []string{"bmp"},
+	routing:  newImgBasicRoutingModule("image/bmp"),
+	routing2: newImgBasicRoutingModule2("image/bmp"),
 })
 
 var gifConf = install(&moduleConfig{
-	name:    "gif",
-	exts:    []string{"gif"},
-	routing: newImgBasicRoutingModule("image/gif"),
+	name:     "gif",
+	exts:     []string{"gif"},
+	routing:  newImgBasicRoutingModule("image/gif"),
+	routing2: newImgBasicRoutingModule2("image/gif"),
 })
 
 var jpgConf = install(&moduleConfig{
-	name:    "jpg",
-	exts:    []string{"jpg", "jpeg"},
-	routing: newImgBasicRoutingModule("image/jpeg"),
+	name:     "jpg",
+	exts:     []string{"jpg", "jpeg"},
+	routing:  newImgBasicRoutingModule("image/jpeg"),
+	routing2: newImgBasicRoutingModule2("image/jpeg"),
 })
 
 var pngConf = install(&moduleConfig{
-	name:    "png",
-	exts:    []string{"png"},
-	routing: newImgBasicRoutingModule("image/png"),
+	name:     "png",
+	exts:     []string{"png"},
+	routing:  newImgBasicRoutingModule("image/png"),
+	routing2: newImgBasicRoutingModule2("image/png"),
 })

@@ -14,12 +14,14 @@ import (
 type RoutingModule interface {
 	ReturnFiles()
 	ReturnBinary()
+	Close()
 }
 
 type moduleConfig struct {
-	name    string
-	exts    []string
-	routing func(path, vpath string, w http.ResponseWriter) RoutingModule
+	name     string
+	exts     []string
+	routing  func(r io.ReadCloser, vpath string, w http.ResponseWriter, size int64) RoutingModule
+	routing2 func(path, vpath string, w http.ResponseWriter) RoutingModule
 }
 
 var (
@@ -75,7 +77,7 @@ func Routing(path string, w http.ResponseWriter) RoutingModule {
 	// search extension
 	for _, conf := range confs {
 		if array.IsInclude(ext, conf.exts) {
-			return conf.routing(path, vpath, w)
+			return conf.routing2(path, vpath, w)
 		}
 	}
 

@@ -64,6 +64,7 @@ func fsRouting(w http.ResponseWriter, r *http.Request) {
 	router := module.Routing(path, w)
 	if router != nil {
 		router.ReturnFiles()
+		router.Close()
 	}
 }
 
@@ -83,5 +84,6 @@ func imgRouting(w http.ResponseWriter, r *http.Request) {
 	router := module.Routing(path, w)
 	if router != nil {
 		router.ReturnBinary()
+		router.Close()
 	}
 }

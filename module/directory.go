@@ -15,6 +15,10 @@ func (o *directoryRoutingModule) ReturnBinary() {
 	http.Error(o.w, "Not Support", http.StatusUnsupportedMediaType)
 }
 
+func (o *directoryRoutingModule) Close() {
+	http.Error(o.w, "Not Support", http.StatusUnsupportedMediaType)
+}
+
 func newDirectoryRouting(path string, w http.ResponseWriter) RoutingModule {
 	return &directoryRoutingModule{
 		path: path,
