@@ -5,13 +5,17 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
-	"./archive"
-	"./image"
+	"./module"
 	"./utility/json"
 )
 
-const defaultPort = 5358
+const (
+	defaultPort = 5358
+	rootFs      = "/fs/"
+	rootImg     = "/img/"
+)
 
 func main() {
 	var port uint
@@ -19,20 +23,11 @@ func main() {
 	flag.UintVar(&port, "p", defaultPort, "listen port")
 	flag.Parse()
 
-	// read directory :: json
-	// localhost/fs/base64(root/dir_path)
+	// fs :: get path files :: json
+	http.HandleFunc(rootFs, fsRouting)
 
-	// read archive :: json
-	// localhost/fs/base64(root/arch.ext)
-
-	// read archive inner directory :: json
-	// localhost/fs/base64(root/arch.ext/dir_path)
-
-	// read image :: binary
-	// localhost/img/base64(root/image_file_path)
-
-	// read image into archive :: binary
-	// localhost/img/base64(root/arch.ext/image_file_path)
+	// img :: get image binary :: binary
+	http.HandleFunc(rootImg, imgRouting)
 
 	// read support type :: json
 	http.HandleFunc("/support", supportType)
@@ -46,9 +41,47 @@ func main() {
 
 func supportType(w http.ResponseWriter, r *http.Request) {
 	data := map[string][]string{
-		"image":   image.SupportType(),
-		"archive": archive.SupportType(),
+	//"image":   image.SupportType(),
+	//"archive": archive.SupportType(),
 	}
 
 	json.WriteResponse(w, data)
+}
+
+func fsRouting(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path[len(rootFs):]
+	if path == "" {
+		http.NotFound(w, r)
+		return
+	}
+
+	_, err := os.Stat(path)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	router := module.Routing(path, w)
+	if router != nil {
+		router.ReturnFiles()
+	}
+}
+
+func imgRouting(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path[len(rootImg):]
+	if path == "" {
+		http.NotFound(w, r)
+		return
+	}
+
+	_, err := os.Stat(path)
+	if err != nil && !os.IsNotExist(err) {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	router := module.Routing(path, w)
+	if router != nil {
+		router.ReturnBinary()
+	}
 }
