@@ -37,6 +37,7 @@ func newImgBasicRoutingModule(mime string) func(io.ReadCloser, string, http.Resp
 			mime: mime,
 			w:    w,
 			r:    r,
+			size: size,
 		}
 	}
 }
