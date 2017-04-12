@@ -17,3 +17,12 @@ func IsInclude(s string, ary []string) bool {
 	}
 	return false
 }
+
+func IsIncludeFunc(s string, ary []string, pred func(string, string) bool) bool {
+	for _, ss := range ary {
+		if pred(ss, s) {
+			return true
+		}
+	}
+	return false
+}

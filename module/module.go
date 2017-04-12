@@ -66,6 +66,20 @@ func Routing(path string, w http.ResponseWriter) RoutingModule {
 		return nil
 	}
 
+	// dispatch
+	conf := dispatch(path, w)
+	if conf == nil {
+		return nil
+	}
+	return conf.routing2(path, vpath, w)
+}
+
+func install(h *moduleConfig) *moduleConfig {
+	confs = append(confs, h)
+	return h
+}
+
+func dispatch(path string, w http.ResponseWriter) *moduleConfig {
 	// not found extension
 	exti := strings.LastIndex(path, ".")
 	if exti < 0 {
@@ -77,18 +91,13 @@ func Routing(path string, w http.ResponseWriter) RoutingModule {
 	// search extension
 	for _, conf := range confs {
 		if array.IsInclude(ext, conf.exts) {
-			return conf.routing2(path, vpath, w)
+			return conf
 		}
 	}
 
 	// not found file type
 	http.Error(w, "No Support Type", http.StatusUnsupportedMediaType)
 	return nil
-}
-
-func install(h *moduleConfig) *moduleConfig {
-	confs = append(confs, h)
-	return h
 }
 
 func returnBinary(w http.ResponseWriter, r io.Reader, mime string, size int64) {
