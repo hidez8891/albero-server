@@ -1,5 +1,7 @@
 package array
 
+import "sort"
+
 func Search(ary []string, t string) int {
 	for i, s := range ary {
 		if s == t {
@@ -25,4 +27,28 @@ func IsIncludeFunc(s string, ary []string, pred func(string, string) bool) bool 
 		}
 	}
 	return false
+}
+
+func Uniq(ary []string) []string {
+	tmp := make([]string, len(ary))
+	copy(tmp, ary)
+	sort.Strings(tmp)
+
+	if len(tmp) == 0 {
+		return tmp
+	}
+
+	pre := ""
+	res := make([]string, 0)
+	for _, s := range tmp[:len(tmp)-1] {
+		if s != pre {
+			res = append(res, s)
+			pre = s
+		}
+	}
+
+	if tmp[len(tmp)-1] != pre {
+		res = append(res, tmp[len(tmp)-1])
+	}
+	return res
 }

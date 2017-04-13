@@ -4,19 +4,53 @@ import (
 	"archive/zip"
 	"io"
 	"net/http"
+	ospath "path"
 	"strings"
 
 	"../utility/array"
+	"../utility/json"
 )
 
 type archZipRoutingModule struct {
+	path  string
 	vpath string
 	files []string
 	w     http.ResponseWriter
 }
 
 func (o *archZipRoutingModule) ReturnFiles() {
-	// TODO
+	exts := supportType()
+	dirs := []string{}
+	files := []string{}
+	archs := []string{}
+
+	for _, f := range o.files {
+		if strings.HasPrefix(f, o.vpath) {
+			if ind := strings.Index(f, "/"); ind >= 0 {
+				name := ospath.Join(o.path, f[:ind])
+				dirs = append(dirs, name)
+			} else {
+				name := ospath.Join(o.path, f)
+				ext := ospath.Ext(name)
+
+				switch {
+				case array.IsInclude(ext, exts["archive"]):
+					// unsupport
+				case array.IsInclude(ext, exts["image"]):
+					files = append(files, name)
+				default:
+					// nothing to do
+				}
+			}
+		}
+	}
+
+	data := map[string][]string{
+		"dir":     array.Uniq(dirs),
+		"image":   array.Uniq(files),
+		"archive": array.Uniq(archs),
+	}
+	json.WriteResponse(o.w, data)
 }
 
 func (o *archZipRoutingModule) ReturnBinary() {
@@ -92,6 +126,7 @@ func archZipRouting2(path, vpath string, w http.ResponseWriter) RoutingModule {
 	// vpath is include directory ?
 	if vpath == "" || array.IsIncludeFunc(vpath, paths, strings.HasPrefix) {
 		return &archZipRoutingModule{
+			path:  path,
 			vpath: vpath,
 			files: paths,
 			w:     w,
