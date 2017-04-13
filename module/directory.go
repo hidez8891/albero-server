@@ -28,7 +28,7 @@ func (o *directoryRoutingModule) ReturnFiles() {
 
 	for _, pt := range paths {
 		var (
-			name = pt.Name()
+			name = path.Join(o.path, pt.Name())
 			ext  = path.Ext(name)
 		)
 
