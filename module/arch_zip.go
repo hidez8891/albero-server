@@ -26,11 +26,16 @@ func (o *archZipRoutingModule) ReturnFiles() {
 
 	for _, f := range o.files {
 		if strings.HasPrefix(f, o.vpath) {
+			f = f[len(o.vpath):]
+			if f[0] == '/' {
+				f = f[1:]
+			}
+
 			if ind := strings.Index(f, "/"); ind >= 0 {
-				name := ospath.Join(o.path, f[:ind])
+				name := ospath.Join(o.path, o.vpath, f[:ind])
 				dirs = append(dirs, name)
 			} else {
-				name := ospath.Join(o.path, f)
+				name := ospath.Join(o.path, o.vpath, f)
 				ext := ospath.Ext(name)
 
 				switch {

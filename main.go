@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"./module"
 )
@@ -49,12 +48,6 @@ func fsRouting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := os.Stat(path)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	router := module.Routing(path, w)
 	if router != nil {
 		router.ReturnFiles()
@@ -66,12 +59,6 @@ func imgRouting(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path[len(rootImg):]
 	if path == "" {
 		http.NotFound(w, r)
-		return
-	}
-
-	_, err := os.Stat(path)
-	if err != nil && !os.IsNotExist(err) {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
