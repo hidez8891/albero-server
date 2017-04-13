@@ -105,6 +105,7 @@ func archZipRouting2(path, vpath string, w http.ResponseWriter) RoutingModule {
 var zipConf = install(&moduleConfig{
 	name:     "zip",
 	exts:     []string{"zip"},
+	types:    typeModuleArch,
 	routing:  archZipRouting,
 	routing2: archZipRouting2,
 })

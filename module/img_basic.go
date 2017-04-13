@@ -70,6 +70,7 @@ func newImgBasicRoutingModule2(mime string) func(string, string, http.ResponseWr
 var bmpConf = install(&moduleConfig{
 	name:     "bmp",
 	exts:     []string{"bmp"},
+	types:    typeModuleImage,
 	routing:  newImgBasicRoutingModule("image/bmp"),
 	routing2: newImgBasicRoutingModule2("image/bmp"),
 })
@@ -77,6 +78,7 @@ var bmpConf = install(&moduleConfig{
 var gifConf = install(&moduleConfig{
 	name:     "gif",
 	exts:     []string{"gif"},
+	types:    typeModuleImage,
 	routing:  newImgBasicRoutingModule("image/gif"),
 	routing2: newImgBasicRoutingModule2("image/gif"),
 })
@@ -84,6 +86,7 @@ var gifConf = install(&moduleConfig{
 var jpgConf = install(&moduleConfig{
 	name:     "jpg",
 	exts:     []string{"jpg", "jpeg"},
+	types:    typeModuleImage,
 	routing:  newImgBasicRoutingModule("image/jpeg"),
 	routing2: newImgBasicRoutingModule2("image/jpeg"),
 })
@@ -91,6 +94,7 @@ var jpgConf = install(&moduleConfig{
 var pngConf = install(&moduleConfig{
 	name:     "png",
 	exts:     []string{"png"},
+	types:    typeModuleImage,
 	routing:  newImgBasicRoutingModule("image/png"),
 	routing2: newImgBasicRoutingModule2("image/png"),
 })

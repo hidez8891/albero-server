@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"./module"
-	"./utility/json"
 )
 
 const (
@@ -40,12 +39,7 @@ func main() {
 }
 
 func supportType(w http.ResponseWriter, r *http.Request) {
-	data := map[string][]string{
-	//"image":   image.SupportType(),
-	//"archive": archive.SupportType(),
-	}
-
-	json.WriteResponse(w, data)
+	module.ReturnSupportType(w, r)
 }
 
 func fsRouting(w http.ResponseWriter, r *http.Request) {

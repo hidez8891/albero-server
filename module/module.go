@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"../utility/array"
+	"../utility/json"
 )
 
 type RoutingModule interface {
@@ -20,20 +21,25 @@ type RoutingModule interface {
 type moduleConfig struct {
 	name     string
 	exts     []string
+	types    moduleType
 	routing  func(r io.ReadCloser, vpath string, w http.ResponseWriter, size int64) RoutingModule
 	routing2 func(path, vpath string, w http.ResponseWriter) RoutingModule
 }
+
+type moduleType int
+
+const (
+	typeModuleImage moduleType = iota
+	typeModuleArch
+)
 
 var (
 	confs []*moduleConfig
 )
 
-func SupportType() []string {
-	exts := []string{}
-	for _, conf := range confs {
-		exts = append(exts, conf.exts...)
-	}
-	return exts
+func ReturnSupportType(w http.ResponseWriter, r *http.Request) {
+	data := supportType()
+	json.WriteResponse(w, data)
 }
 
 func Routing(path string, w http.ResponseWriter) RoutingModule {
@@ -105,5 +111,26 @@ func returnBinary(w http.ResponseWriter, r io.Reader, mime string, size int64) {
 	w.Header().Set("Content-Length", strconv.FormatInt(size, 10))
 	if _, err := io.Copy(w, r); err != nil {
 		log.Printf("ERR: %s: %v\n", mime, err)
+	}
+}
+
+func supportType() map[string][]string {
+	files := []string{}
+	archs := []string{}
+
+	for _, conf := range confs {
+		switch conf.types {
+		case typeModuleImage:
+			files = append(files, conf.exts...)
+		case typeModuleArch:
+			archs = append(archs, conf.exts...)
+		default:
+			// nothing to do
+		}
+	}
+
+	return map[string][]string{
+		"image":   files,
+		"archive": archs,
 	}
 }
