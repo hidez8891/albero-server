@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	ospath "path"
 	"strconv"
 	"strings"
 
@@ -87,12 +88,11 @@ func install(h *moduleConfig) *moduleConfig {
 
 func dispatch(path string, w http.ResponseWriter) *moduleConfig {
 	// not found extension
-	exti := strings.LastIndex(path, ".")
-	if exti < 0 {
+	ext := ospath.Ext(path)
+	if len(ext) == 0 {
 		http.Error(w, "Not Found File Type", http.StatusInternalServerError)
 		return nil
 	}
-	ext := path[exti+1:]
 
 	// search extension
 	for _, conf := range confs {
