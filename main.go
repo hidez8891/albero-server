@@ -6,12 +6,14 @@ import (
 	"log"
 	"net/http"
 
-	"./archive"
-	"./image"
-	"./utility/json"
+	"./module"
 )
 
-const defaultPort = 5358
+const (
+	defaultPort = 5358
+	rootFs      = "/fs/"
+	rootImg     = "/img/"
+)
 
 func main() {
 	var port uint
@@ -19,15 +21,13 @@ func main() {
 	flag.UintVar(&port, "p", defaultPort, "listen port")
 	flag.Parse()
 
-	// image data
-	// image/image_file_path
-	image.SetHttpRoute()
+	// fs :: get path files :: json
+	http.HandleFunc(rootFs, fsRouting)
 
-	// archive data
-	// archive/archive_file_path[/image_file_path]
-	archive.SetHttpRoute()
+	// img :: get image binary :: binary
+	http.HandleFunc(rootImg, imgRouting)
 
-	// support type
+	// read support type :: json
 	http.HandleFunc("/support", supportType)
 
 	log.Printf("Listening on %d\n", port)
@@ -38,10 +38,33 @@ func main() {
 }
 
 func supportType(w http.ResponseWriter, r *http.Request) {
-	data := map[string][]string{
-		"image":   image.SupportType(),
-		"archive": archive.SupportType(),
+	module.ReturnSupportType(w, r)
+}
+
+func fsRouting(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path[len(rootFs):]
+	if path == "" {
+		http.NotFound(w, r)
+		return
 	}
 
-	json.WriteResponse(w, data)
+	router := module.Routing(path, w)
+	if router != nil {
+		router.ReturnFiles()
+		router.Close()
+	}
+}
+
+func imgRouting(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path[len(rootImg):]
+	if path == "" {
+		http.NotFound(w, r)
+		return
+	}
+
+	router := module.Routing(path, w)
+	if router != nil {
+		router.ReturnBinary()
+		router.Close()
+	}
 }
