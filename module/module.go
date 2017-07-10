@@ -1,136 +1,104 @@
 package module
 
 import (
+	"fmt"
 	"io"
-	"log"
-	"net/http"
-	"os"
-	ospath "path"
-	"strconv"
 	"strings"
-
-	"../utility/array"
-	"../utility/json"
 )
 
-type RoutingModule interface {
-	ReturnFiles()
-	ReturnBinary()
-	Close()
-}
-
-type moduleConfig struct {
-	name     string
-	exts     []string
-	types    moduleType
-	routing  func(r io.ReadCloser, vpath string, w http.ResponseWriter, size int64) RoutingModule
-	routing2 func(path, vpath string, w http.ResponseWriter) RoutingModule
-}
-
-type moduleType int
+type ModuleType int
 
 const (
-	typeModuleImage moduleType = iota
-	typeModuleArch
+	MODULE_IMAGE ModuleType = iota
+	MODULE_ARCH
 )
 
-var (
-	confs []*moduleConfig
-)
+const errNotSupport = "%s is not support this module type"
 
-func ReturnSupportType(w http.ResponseWriter, r *http.Request) {
-	data := supportType()
-	json.WriteResponse(w, data)
+type File struct {
+	data []byte
+	mime string
+	size int64
 }
 
-func Routing(path string, w http.ResponseWriter) RoutingModule {
-	path = strings.Replace(path, "\\", "/", -1)
-
-	// return directory routing module
-	if stat, err := os.Stat(path); err == nil && stat.IsDir() {
-		return newDirectoryRouting(path, w)
-	}
-
-	// split real path :: virtual path
-	paths := strings.Split(path, "/")
-	path, paths = paths[0], paths[1:]
-	path += "/"
-
-	for len(paths) > 0 {
-		newPath := path + "/" + paths[0]
-		if _, err := os.Stat(newPath); err != nil {
-			break
-		}
-
-		path = newPath
-		paths = paths[1:]
-	}
-	vpath := strings.Join(paths, "/")
-
-	// invalid path
-	if _, err := os.Stat(path); err != nil {
-		http.Error(w, "Not Found File", http.StatusInternalServerError)
-		return nil
-	}
-
-	// dispatch
-	conf := dispatch(path, w)
-	if conf == nil {
-		return nil
-	}
-	return conf.routing2(path, vpath, w)
+type Module struct {
+	exts []string
+	Type ModuleType
+	// archive type
+	funcArchFiles func(r io.Reader) []string
+	funcArchRead  func(r io.Reader, vpath string) *File
+	// image type
+	funcImageRead func(r io.Reader) *File
 }
 
-func install(h *moduleConfig) *moduleConfig {
-	confs = append(confs, h)
-	return h
-}
+var modules []*Module
 
-func dispatch(path string, w http.ResponseWriter) *moduleConfig {
-	// not found extension
-	ext := ospath.Ext(path)
-	if len(ext) == 0 {
-		http.Error(w, "Not Found File Type", http.StatusInternalServerError)
+func GetSupportModule(path string) *Module {
+	ext := getFileExt(path)
+	mod, ok := modules[ext]
+	if !ok {
 		return nil
 	}
+	return mod
+}
 
-	// search extension
-	for _, conf := range confs {
-		if array.IsInclude(ext, conf.exts) {
-			return conf
-		}
+func RegisterArchModule(exts []string, funcArchFiles func(r io.Reader) []string, funcArchRead func(r io.Reader, vpath string) *File) {
+	h := &Module{
+		exts:          exts,
+		Type:          MODULE_ARCH,
+		funcArchFiles: funcArchFiles,
+		funcArchRead:  funcArchRead,
+		funcImageRead: dummyFuncImageRead,
+	}
+	modules = append(modules, h)
+}
+
+func RegisterImageModule(exts []string, funcImageRead func(r io.Reader) *File) {
+	h := &Module{
+		exts:          exts,
+		Type:          MODULE_IMAGE,
+		funcArchFiles: dummyFuncArchFiles,
+		funcArchRead:  dummyFuncArchRead,
+		funcImageRead: funcImageRead,
+	}
+	modules = append(modules, h)
+}
+
+func SupportType() map[ModuleType][]string {
+	types := map[ModuleType][]string{
+		MODULE_IMAGE: make([]string, 0),
+		MODULE_ARCH:  make([]string, 0),
 	}
 
-	// not found file type
-	http.Error(w, "No Support Type", http.StatusUnsupportedMediaType)
+	for _, module := range modules {
+		v, _ := types[module.Type]
+		v = append(v, module.exts...)
+		types[module.types] = v
+	}
+	return types
+}
+
+func dummyFuncArchFiles(r io.Reader) []string {
+	fmt.Printf(errNotSupport, "Files")
 	return nil
 }
 
-func returnBinary(w http.ResponseWriter, r io.Reader, mime string, size int64) {
-	w.Header().Set("Content-Type", mime)
-	w.Header().Set("Content-Length", strconv.FormatInt(size, 10))
-	if _, err := io.Copy(w, r); err != nil {
-		log.Printf("ERR: %s: %v\n", mime, err)
-	}
+func dummyFuncArchRead(r io.Reader, vpath string) *File {
+	fmt.Printf(errNotSupport, "Read")
+	return nil
 }
 
-func supportType() map[string][]string {
-	files := []string{}
-	archs := []string{}
+func dummyFuncImageRead(r io.Reader) *File {
+	fmt.Printf(errNotSupport, "Read")
+	return nil
+}
 
-	for _, conf := range confs {
-		switch conf.types {
-		case typeModuleImage:
-			files = append(files, conf.exts...)
-		case typeModuleArch:
-			archs = append(archs, conf.exts...)
-		default:
-			// nothing to do
-		}
+func getFileExt(path string) (ext string) {
+	index := strings.LastIndex(path, ".")
+	if index < 0 || index >= len(path)-1 {
+		return
 	}
 
-	return map[string][]string{
-		"image":   files,
-		"archive": archs,
-	}
+	ext = path[index+1:]
+	return
 }
