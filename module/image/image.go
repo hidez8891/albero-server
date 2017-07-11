@@ -1,9 +1,6 @@
 package image
 
 import (
-	"io"
-	"io/ioutil"
-
 	"github.com/hidez8891/albero-server/module"
 )
 
@@ -23,17 +20,12 @@ func init() {
 	}
 }
 
-func rawRead(mime string) func(io.Reader) *module.File {
-	return func(r io.Reader) *module.File {
-		buff, err := ioutil.ReadAll(r)
-		if err != nil {
-			return nil
-		}
-
+func rawRead(mime string) func(module.Reader) *module.File {
+	return func(r module.Reader) *module.File {
 		return &module.File{
-			Data: buff,
+			Data: r,
 			Mime: mime,
-			Size: int64(len(buff)),
+			Size: r.Size(),
 		}
 	}
 }

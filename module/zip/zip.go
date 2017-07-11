@@ -2,9 +2,6 @@ package zip
 
 import (
 	"archive/zip"
-	"bytes"
-	"io"
-	"io/ioutil"
 	"strings"
 
 	"github.com/hidez8891/albero-server/module"
@@ -14,13 +11,8 @@ func init() {
 	module.RegisterArchModule([]string{"zip"}, files, read)
 }
 
-func files(r io.Reader) []string {
-	buff, err := ioutil.ReadAll(r)
-	if err != nil {
-		return nil
-	}
-
-	arch, err := zip.NewReader(bytes.NewReader(buff), int64(len(buff)))
+func files(r module.ReaderAt) []string {
+	arch, err := zip.NewReader(r, r.Size())
 	if err != nil {
 		return nil
 	}
@@ -34,45 +26,35 @@ func files(r io.Reader) []string {
 	return files
 }
 
-func read(r io.Reader, vpath string) *module.File {
-	buff, err := ioutil.ReadAll(r)
+func read(r module.ReaderAt, vpath string) *module.File {
+	arch, err := zip.NewReader(r, r.Size())
 	if err != nil {
 		return nil
 	}
 
-	arch, err := zip.NewReader(bytes.NewReader(buff), int64(len(buff)))
-	if err != nil {
-		return nil
-	}
-
-	data := make([]byte, 0)
+	var zipfile *zip.File
 	for _, f := range arch.File {
 		path := strings.Replace(f.Name, "\\", "/", -1)
 
 		if path == vpath {
-			rr, err := f.Open()
-			if err != nil {
-				return nil
-			}
-			defer rr.Close()
-
-			data, err = ioutil.ReadAll(rr)
-			if err != nil {
-				return nil
-			}
-
+			zipfile = f
 			break
 		}
 	}
 
-	if len(data) == 0 {
+	if zipfile == nil {
+		return nil
+	}
+
+	rr, err := zipfile.Open()
+	if err != nil {
 		return nil
 	}
 
 	file := &module.File{
-		Data: data,
+		Data: rr,
 		Mime: "",
-		Size: int64(len(data)),
+		Size: int64(zipfile.FileHeader.UncompressedSize64),
 	}
 
 	return file

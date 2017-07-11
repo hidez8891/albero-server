@@ -16,7 +16,7 @@ const (
 const errNotSupport = "%s is not support this module type"
 
 type File struct {
-	Data []byte
+	Data io.ReadCloser
 	Mime string
 	Size int64
 }
@@ -25,10 +25,10 @@ type Module struct {
 	exts []string
 	Type ModuleType
 	// archive type
-	funcArchFiles func(r io.Reader) []string
-	funcArchRead  func(r io.Reader, vpath string) *File
+	funcArchFiles func(r ReaderAt) []string
+	funcArchRead  func(r ReaderAt, vpath string) *File
 	// image type
-	funcImageRead func(r io.Reader) *File
+	funcImageRead func(r Reader) *File
 }
 
 var modules []*Module
@@ -47,7 +47,7 @@ func GetSupportModule(path string) *Module {
 	return nil
 }
 
-func RegisterArchModule(exts []string, funcArchFiles func(r io.Reader) []string, funcArchRead func(r io.Reader, vpath string) *File) {
+func RegisterArchModule(exts []string, funcArchFiles func(r ReaderAt) []string, funcArchRead func(r ReaderAt, vpath string) *File) {
 	h := &Module{
 		exts:          exts,
 		Type:          MODULE_ARCH,
@@ -58,7 +58,7 @@ func RegisterArchModule(exts []string, funcArchFiles func(r io.Reader) []string,
 	modules = append(modules, h)
 }
 
-func RegisterImageModule(exts []string, funcImageRead func(r io.Reader) *File) {
+func RegisterImageModule(exts []string, funcImageRead func(r Reader) *File) {
 	h := &Module{
 		exts:          exts,
 		Type:          MODULE_IMAGE,
@@ -83,17 +83,17 @@ func SupportType() map[ModuleType][]string {
 	return types
 }
 
-func dummyFuncArchFiles(r io.Reader) []string {
+func dummyFuncArchFiles(r ReaderAt) []string {
 	fmt.Printf(errNotSupport, "Files")
 	return nil
 }
 
-func dummyFuncArchRead(r io.Reader, vpath string) *File {
+func dummyFuncArchRead(r ReaderAt, vpath string) *File {
 	fmt.Printf(errNotSupport, "Read")
 	return nil
 }
 
-func dummyFuncImageRead(r io.Reader) *File {
+func dummyFuncImageRead(r Reader) *File {
 	fmt.Printf(errNotSupport, "Read")
 	return nil
 }
