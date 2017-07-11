@@ -16,9 +16,9 @@ const (
 const errNotSupport = "%s is not support this module type"
 
 type File struct {
-	data []byte
-	mime string
-	size int64
+	Data []byte
+	Mime string
+	Size int64
 }
 
 type Module struct {
