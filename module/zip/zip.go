@@ -11,6 +11,7 @@ import (
 )
 
 func init() {
+	module.RegisterArchModule([]string{"zip"}, files, read)
 }
 
 func files(r io.Reader) []string {
