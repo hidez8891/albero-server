@@ -34,7 +34,7 @@ func files(r io.Reader) []string {
 	return files
 }
 
-func read(r io.Reader, vpath string) *File {
+func read(r io.Reader, vpath string) *module.File {
 	buff, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil
@@ -46,7 +46,6 @@ func read(r io.Reader, vpath string) *File {
 	}
 
 	data := make([]byte, 0)
-	files := make([]string, 0)
 	for _, f := range arch.File {
 		path := strings.Replace(f.Name, "\\", "/", -1)
 
@@ -57,7 +56,7 @@ func read(r io.Reader, vpath string) *File {
 			}
 			defer rr.Close()
 
-			data, err := ioutil.ReadAll(rr)
+			data, err = ioutil.ReadAll(rr)
 			if err != nil {
 				return nil
 			}
@@ -73,7 +72,7 @@ func read(r io.Reader, vpath string) *File {
 	file := &module.File{
 		Data: data,
 		Mime: "",
-		Size: len(data),
+		Size: int64(len(data)),
 	}
 
 	return file

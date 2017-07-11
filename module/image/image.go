@@ -24,7 +24,7 @@ func init() {
 }
 
 func rawRead(mime string) func(io.Reader) *module.File {
-	return func(r io.Reader) {
+	return func(r io.Reader) *module.File {
 		buff, err := ioutil.ReadAll(r)
 		if err != nil {
 			return nil
@@ -33,7 +33,7 @@ func rawRead(mime string) func(io.Reader) *module.File {
 		return &module.File{
 			Data: buff,
 			Mime: mime,
-			Size: len(buff),
+			Size: int64(len(buff)),
 		}
 	}
 }

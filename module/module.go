@@ -35,11 +35,16 @@ var modules []*Module
 
 func GetSupportModule(path string) *Module {
 	ext := getFileExt(path)
-	mod, ok := modules[ext]
-	if !ok {
-		return nil
+
+	for _, mod := range modules {
+		for _, xt := range mod.exts {
+			if xt == ext {
+				return mod
+			}
+		}
 	}
-	return mod
+
+	return nil
 }
 
 func RegisterArchModule(exts []string, funcArchFiles func(r io.Reader) []string, funcArchRead func(r io.Reader, vpath string) *File) {
@@ -73,7 +78,7 @@ func SupportType() map[ModuleType][]string {
 	for _, module := range modules {
 		v, _ := types[module.Type]
 		v = append(v, module.exts...)
-		types[module.types] = v
+		types[module.Type] = v
 	}
 	return types
 }
