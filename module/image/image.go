@@ -9,10 +9,10 @@ func init() {
 		exts []string
 		mime string
 	}{
-		{[]string{"bmp"}, "image/bmp"},
-		{[]string{"gif"}, "image/gif"},
-		{[]string{"jpg", "jpeg"}, "image/jpeg"},
-		{[]string{"png"}, "image/png"},
+		{[]string{".bmp"}, "image/bmp"},
+		{[]string{".gif"}, "image/gif"},
+		{[]string{".jpg", "jpeg"}, "image/jpeg"},
+		{[]string{".png"}, "image/png"},
 	}
 
 	for _, t := range types {

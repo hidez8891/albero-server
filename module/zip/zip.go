@@ -8,7 +8,7 @@ import (
 )
 
 func init() {
-	module.RegisterArchModule([]string{"zip"}, files, read)
+	module.RegisterArchModule([]string{".zip"}, files, read)
 }
 
 func files(r module.ReaderAt) []string {

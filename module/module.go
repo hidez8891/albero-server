@@ -3,7 +3,7 @@ package module
 import (
 	"fmt"
 	"io"
-	"strings"
+	"path/filepath"
 )
 
 type ModuleType int
@@ -34,7 +34,7 @@ type Module struct {
 var modules []*Module
 
 func GetSupportModule(path string) *Module {
-	ext := getFileExt(path)
+	ext := filepath.Ext(path)
 
 	for _, mod := range modules {
 		for _, xt := range mod.exts {
@@ -96,14 +96,4 @@ func dummyFuncArchRead(r ReaderAt, vpath string) *File {
 func dummyFuncImageRead(r Reader) *File {
 	fmt.Printf(errNotSupport, "Read")
 	return nil
-}
-
-func getFileExt(path string) (ext string) {
-	index := strings.LastIndex(path, ".")
-	if index < 0 || index >= len(path)-1 {
-		return
-	}
-
-	ext = path[index+1:]
-	return
 }
