@@ -11,7 +11,7 @@ func init() {
 	}{
 		{[]string{".bmp"}, "image/bmp"},
 		{[]string{".gif"}, "image/gif"},
-		{[]string{".jpg", "jpeg"}, "image/jpeg"},
+		{[]string{".jpg", ".jpeg"}, "image/jpeg"},
 		{[]string{".png"}, "image/png"},
 	}
 
