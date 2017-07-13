@@ -2,31 +2,22 @@ package array
 
 import "sort"
 
-func Search(ary []string, t string) int {
+func Filter(ary []string, pred func(string) bool) []string {
+	res := make([]string, 0)
+	for _, s := range ary {
+		if pred(s) {
+			res = append(res, s)
+		}
+	}
+	return res
+}
+
+func Map(ary []string, conv func(string) string) []string {
+	res := make([]string, len(ary))
 	for i, s := range ary {
-		if s == t {
-			return i
-		}
+		res[i] = conv(s)
 	}
-	return -1
-}
-
-func IsInclude(s string, ary []string) bool {
-	for _, ss := range ary {
-		if ss == s {
-			return true
-		}
-	}
-	return false
-}
-
-func IsIncludeFunc(s string, ary []string, pred func(string, string) bool) bool {
-	for _, ss := range ary {
-		if pred(ss, s) {
-			return true
-		}
-	}
-	return false
+	return res
 }
 
 func Uniq(ary []string) []string {
