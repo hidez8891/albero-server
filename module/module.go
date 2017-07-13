@@ -25,10 +25,10 @@ type Module struct {
 	exts []string
 	Type ModuleType
 	// archive type
-	funcArchFiles func(r ReaderAt) []string
-	funcArchRead  func(r ReaderAt, vpath string) *File
+	FuncArchFiles func(r ReaderAt) []string
+	FuncArchRead  func(r ReaderAt, vpath string) *File
 	// image type
-	funcImageRead func(r Reader) *File
+	FuncImageRead func(r Reader) *File
 }
 
 var modules []*Module
@@ -51,9 +51,9 @@ func RegisterArchModule(exts []string, funcArchFiles func(r ReaderAt) []string, 
 	h := &Module{
 		exts:          exts,
 		Type:          MODULE_ARCH,
-		funcArchFiles: funcArchFiles,
-		funcArchRead:  funcArchRead,
-		funcImageRead: dummyFuncImageRead,
+		FuncArchFiles: funcArchFiles,
+		FuncArchRead:  funcArchRead,
+		FuncImageRead: dummyFuncImageRead,
 	}
 	modules = append(modules, h)
 }
@@ -62,9 +62,9 @@ func RegisterImageModule(exts []string, funcImageRead func(r Reader) *File) {
 	h := &Module{
 		exts:          exts,
 		Type:          MODULE_IMAGE,
-		funcArchFiles: dummyFuncArchFiles,
-		funcArchRead:  dummyFuncArchRead,
-		funcImageRead: funcImageRead,
+		FuncArchFiles: dummyFuncArchFiles,
+		FuncArchRead:  dummyFuncArchRead,
+		FuncImageRead: funcImageRead,
 	}
 	modules = append(modules, h)
 }
