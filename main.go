@@ -72,8 +72,8 @@ func supportRouting(w http.ResponseWriter, r *http.Request) {
 	}{}
 
 	types := module.SupportType()
-	exts.Image, _ = types[module.MODULE_IMAGE]
-	exts.Arch, _ = types[module.MODULE_ARCH]
+	exts.Image = types[module.MODULE_IMAGE]
+	exts.Arch = types[module.MODULE_ARCH]
 
 	json.WriteResponse(w, exts)
 }
@@ -102,7 +102,7 @@ func typeRouting(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, tp := range types {
-		exts, _ := supports[tp.mtype]
+		exts := supports[tp.mtype]
 		for _, ex := range exts {
 			if ex == ext {
 				// return file's type string
@@ -115,7 +115,6 @@ func typeRouting(w http.ResponseWriter, r *http.Request) {
 
 	// not found
 	http.NotFound(w, r)
-	return
 }
 
 func filesRouting(w http.ResponseWriter, r *http.Request) {
