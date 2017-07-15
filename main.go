@@ -65,6 +65,24 @@ func queryPath(r *http.Request) (string, error) {
 	return path, nil
 }
 
+func splitRealVirtualPath(path string) (string, []string, error) {
+	paths := strings.SplitAfter(path, "/")
+	path = ""
+	for len(paths) > 0 {
+		pt := filepath.Join(path, paths[0])
+		_, err := os.Stat(pt)
+		if os.IsNotExist(err) {
+			break
+		}
+		if err != nil {
+			return "", nil, err
+		}
+		path = pt
+		paths = paths[1:]
+	}
+	return path, paths, nil
+}
+
 func supportRouting(w http.ResponseWriter, r *http.Request) {
 	exts := struct {
 		Image []string `json:"image"`
@@ -123,23 +141,11 @@ func filesRouting(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	paths := strings.SplitAfter(path, "/")
-	path = ""
-	for len(paths) > 0 {
-		pt := filepath.Join(path, paths[0])
-		_, err := os.Stat(pt)
-		if os.IsNotExist(err) {
-			break
-		}
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		path = pt
-		paths = paths[1:]
+	path, paths, err := splitRealVirtualPath(path)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
-
 	stat, _ := os.Stat(path)
 	var files []string
 
@@ -212,23 +218,11 @@ func imageRouting(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	paths := strings.SplitAfter(path, "/")
-	path = ""
-	for len(paths) > 0 {
-		pt := filepath.Join(path, paths[0])
-		_, err := os.Stat(pt)
-		if os.IsNotExist(err) {
-			break
-		}
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		path = pt
-		paths = paths[1:]
+	path, paths, err := splitRealVirtualPath(path)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
-
 	stat, _ := os.Stat(path)
 
 	// 'paths' is not empty, 'path' needs archive file path
