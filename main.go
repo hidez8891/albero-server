@@ -153,56 +153,12 @@ func filesRouting(w http.ResponseWriter, r *http.Request) {
 	// 'paths' is empty, 'path' needs archive file or directory path
 	if len(paths) == 0 && stat.IsDir() {
 		// directory
-		infos, err := ioutil.ReadDir(path)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		files = make([]string, 0)
-		for _, v := range infos {
-			name := strings.Replace(v.Name(), "\\", "/", -1)
-			if ind := strings.Index(name, "/"); ind >= 0 {
-				name = name[ind+1:]
-			}
-			files = append(files, name)
-		}
+		files = getFilesFromDirectory(w, path)
 	} else {
-		// archive
-		mod := module.GetSupportModule(path)
-		if mod == nil {
-			http.Error(w, "no support type", http.StatusBadRequest)
-			return
-		}
-		if mod.Type != module.MODULE_ARCH {
-			http.Error(w, "wrong module operation", http.StatusBadRequest)
-			return
-		}
-
-		file, err := module.NewReaderAt(path)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer file.Close()
-
-		// TODO
-		// support nested archive's path
-		files = mod.FuncArchFiles(file)
-		for _, vpath := range paths {
-			files = array.Filter(files, func(s string) bool {
-				return strings.HasPrefix(s, vpath)
-			})
-			files = array.Map(files, func(s string) string {
-				return s[len(vpath):]
-			})
-		}
-		files = array.Uniq(array.Map(files, func(s string) string {
-			if index := strings.Index(s, "/"); index >= 0 {
-				return s[:index] // remove suffix
-			}
-			return s
-		}))
+		files = getFilesFromArchive(w, path, paths)
+	}
+	if files == nil {
+		return // still response error
 	}
 
 	// return json format
@@ -210,6 +166,65 @@ func filesRouting(w http.ResponseWriter, r *http.Request) {
 		Files []string `json:"files"`
 	}{files}
 	json.WriteResponse(w, ret)
+}
+
+func getFilesFromDirectory(w http.ResponseWriter, path string) []string {
+	infos, err := ioutil.ReadDir(path)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return nil
+	}
+
+	files := make([]string, 0)
+	for _, v := range infos {
+		name := strings.Replace(v.Name(), "\\", "/", -1)
+		if ind := strings.Index(name, "/"); ind >= 0 {
+			name = name[ind+1:]
+		}
+		files = append(files, name)
+	}
+	return files
+}
+
+func getFilesFromArchive(w http.ResponseWriter, path string, paths []string) []string {
+	mod := module.GetSupportModule(path)
+	if mod == nil {
+		http.Error(w, "no support type", http.StatusBadRequest)
+		return nil
+	}
+	if mod.Type != module.MODULE_ARCH {
+		http.Error(w, "wrong module operation", http.StatusBadRequest)
+		return nil
+	}
+
+	file, err := module.NewReaderAt(path)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return nil
+	}
+	defer file.Close()
+
+	// TODO
+	// support nested archive's path
+	vpath := strings.Join(paths, "")
+	files := mod.FuncArchFiles(file)
+	if files == nil {
+		http.Error(w, "fail read file", http.StatusInternalServerError)
+		return nil
+	}
+	files = array.Filter(files, func(s string) bool {
+		return strings.HasPrefix(s, vpath)
+	})
+	files = array.Map(files, func(s string) string {
+		return s[len(vpath):] // remove prefix
+	})
+	files = array.Uniq(array.Map(files, func(s string) string {
+		if index := strings.Index(s, "/"); index >= 0 {
+			return s[:index] // remove suffix (when directory)
+		}
+		return s
+	}))
+	return files
 }
 
 func imageRouting(w http.ResponseWriter, r *http.Request) {
@@ -228,49 +243,64 @@ func imageRouting(w http.ResponseWriter, r *http.Request) {
 	// 'paths' is not empty, 'path' needs archive file path
 	// 'paths' is empty, 'path' needs image file
 	if len(paths) == 0 {
-		// image file
 		// reject directory path
 		if stat.IsDir() {
 			http.Error(w, "path is directory", http.StatusBadRequest)
 			return
 		}
-		imageRoutingResponse(w, path, nil)
+		file := getImageDataFromFile(w, path)
+		defer file.Close()
+		imageRoutingResponse(w, path, file)
 	} else {
-		// archive file
-		mod := module.GetSupportModule(path)
-		if mod == nil {
-			http.Error(w, "no support type", http.StatusBadRequest)
-			return
-		}
-		if mod.Type != module.MODULE_ARCH {
-			http.Error(w, "wrong module operation", http.StatusBadRequest)
-			return
-		}
-
-		arch, err := module.NewReaderAt(path)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer arch.Close()
-
-		// TODO
-		// support nested archive's path
-		imgpath := strings.Join(paths, "")
-		file := mod.FuncArchRead(arch, imgpath)
-		if file == nil {
-			http.Error(w, "fail read file", http.StatusInternalServerError)
-			return
-		}
-		defer file.Data.Close()
-
-		r, err := module.NewReader(file.Data, file.Size)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		imageRoutingResponse(w, imgpath, r)
+		file := getImageDataFromArchive(w, path, paths)
+		defer file.Close()
+		imageRoutingResponse(w, paths[len(paths)-1], file)
 	}
+}
+
+func getImageDataFromFile(w http.ResponseWriter, path string) module.Reader {
+	r, err := module.NewReaderAt(path)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return nil
+	}
+	return r
+}
+
+func getImageDataFromArchive(w http.ResponseWriter, path string, paths []string) module.Reader {
+	mod := module.GetSupportModule(path)
+	if mod == nil {
+		http.Error(w, "no support type", http.StatusBadRequest)
+		return nil
+	}
+	if mod.Type != module.MODULE_ARCH {
+		http.Error(w, "wrong module operation", http.StatusBadRequest)
+		return nil
+	}
+
+	arch, err := module.NewReaderAt(path)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return nil
+	}
+	defer arch.Close()
+
+	// TODO
+	// support nested archive's path
+	imgpath := strings.Join(paths, "")
+	file := mod.FuncArchRead(arch, imgpath)
+	if file == nil {
+		http.Error(w, "fail read file", http.StatusInternalServerError)
+		return nil
+	}
+	defer file.Data.Close()
+
+	r, err := module.NewReader(file.Data, file.Size)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return nil
+	}
+	return r
 }
 
 func imageRoutingResponse(w http.ResponseWriter, path string, r module.Reader) {
@@ -282,16 +312,6 @@ func imageRoutingResponse(w http.ResponseWriter, path string, r module.Reader) {
 	if mod.Type != module.MODULE_IMAGE {
 		http.Error(w, "wrong module operation", http.StatusBadRequest)
 		return
-	}
-
-	if r == nil {
-		var err error
-		r, err = module.NewReaderAt(path)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer r.Close()
 	}
 
 	file := mod.FuncImageRead(r)
