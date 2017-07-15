@@ -272,8 +272,8 @@ func imageRouting(w http.ResponseWriter, r *http.Request) {
 		defer file.Data.Close()
 
 		r, err := module.NewReader(file.Data, file.Size)
-		if file == nil {
-			http.Error(w, "fail read binary", http.StatusInternalServerError)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		imageRoutingResponse(w, imgpath, r)
