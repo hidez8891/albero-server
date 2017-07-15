@@ -239,6 +239,7 @@ func imageRouting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	stat, _ := os.Stat(path)
+	var file module.Reader
 
 	// 'paths' is not empty, 'path' needs archive file path
 	// 'paths' is empty, 'path' needs image file
@@ -248,14 +249,19 @@ func imageRouting(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "path is directory", http.StatusBadRequest)
 			return
 		}
-		file := getImageDataFromFile(w, path)
-		defer file.Close()
-		imageRoutingResponse(w, path, file)
+		file = getImageDataFromFile(w, path)
 	} else {
-		file := getImageDataFromArchive(w, path, paths)
-		defer file.Close()
-		imageRoutingResponse(w, paths[len(paths)-1], file)
+		file = getImageDataFromArchive(w, path, paths)
+		path = paths[len(paths)-1]
 	}
+
+	if file == nil {
+		return // still response error
+	}
+	defer file.Close()
+
+	// return binary format
+	imageRoutingResponse(w, path, file)
 }
 
 func getImageDataFromFile(w http.ResponseWriter, path string) module.Reader {
