@@ -21,6 +21,15 @@ type ReaderAt interface {
 	ReadAt(p []byte, off int64) (n int, err error)
 }
 
+type FileReader struct {
+	io.ReadCloser
+	size int64
+}
+
+func (o *FileReader) Size() int64 {
+	return o.size
+}
+
 type FileReaderAt struct {
 	ioReaderAtCloser
 	size int64
@@ -28,6 +37,11 @@ type FileReaderAt struct {
 
 func (o *FileReaderAt) Size() int64 {
 	return o.size
+}
+
+func NewReader(file io.ReadCloser, size int64) (r Reader, err error) {
+	r = &FileReader{file, size}
+	return
 }
 
 func NewReaderAt(path string) (r ReaderAt, err error) {

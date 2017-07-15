@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -163,7 +164,6 @@ func filesRouting(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		// archive
-		fmt.Println(path, paths)
 		mod := module.GetSupportModule(path)
 		if mod == nil {
 			http.Error(w, "no support type", http.StatusBadRequest)
@@ -208,5 +208,109 @@ func filesRouting(w http.ResponseWriter, r *http.Request) {
 }
 
 func imageRouting(w http.ResponseWriter, r *http.Request) {
-	http.Error(w, "Not Implemented", http.StatusNotImplemented)
+	path, err := queryPath(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	paths := strings.SplitAfter(path, "/")
+	path = ""
+	for len(paths) > 0 {
+		pt := filepath.Join(path, paths[0])
+		_, err := os.Stat(pt)
+		if os.IsNotExist(err) {
+			break
+		}
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		path = pt
+		paths = paths[1:]
+	}
+
+	stat, _ := os.Stat(path)
+
+	// 'paths' is not empty, 'path' needs archive file path
+	// 'paths' is empty, 'path' needs image file
+	if len(paths) == 0 {
+		// image file
+		// reject directory path
+		if stat.IsDir() {
+			http.Error(w, "path is directory", http.StatusBadRequest)
+			return
+		}
+		imageRoutingResponse(w, path, nil)
+	} else {
+		// archive file
+		mod := module.GetSupportModule(path)
+		if mod == nil {
+			http.Error(w, "no support type", http.StatusBadRequest)
+			return
+		}
+		if mod.Type != module.MODULE_ARCH {
+			http.Error(w, "wrong module operation", http.StatusBadRequest)
+			return
+		}
+
+		arch, err := module.NewReaderAt(path)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer arch.Close()
+
+		// TODO
+		// support nested archive's path
+		imgpath := strings.Join(paths, "")
+		file := mod.FuncArchRead(arch, imgpath)
+		if file == nil {
+			http.Error(w, "fail read file", http.StatusInternalServerError)
+			return
+		}
+		defer file.Data.Close()
+
+		r, err := module.NewReader(file.Data, file.Size)
+		if file == nil {
+			http.Error(w, "fail read binary", http.StatusInternalServerError)
+			return
+		}
+		imageRoutingResponse(w, imgpath, r)
+	}
+}
+
+func imageRoutingResponse(w http.ResponseWriter, path string, r module.Reader) {
+	mod := module.GetSupportModule(path)
+	if mod == nil {
+		http.Error(w, "no support type", http.StatusBadRequest)
+		return
+	}
+	if mod.Type != module.MODULE_IMAGE {
+		http.Error(w, "wrong module operation", http.StatusBadRequest)
+		return
+	}
+
+	if r == nil {
+		var err error
+		r, err = module.NewReaderAt(path)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer r.Close()
+	}
+
+	file := mod.FuncImageRead(r)
+	if file == nil {
+		http.Error(w, "fail read file", http.StatusInternalServerError)
+		return
+	}
+	defer file.Data.Close()
+
+	w.Header().Set("Content-Type", file.Mime)
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", file.Size))
+	if _, err := io.Copy(w, file.Data); err != nil {
+		log.Printf("ERR: WriteResponse: %v\n", err)
+	}
 }
